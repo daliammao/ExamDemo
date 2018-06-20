@@ -19,6 +19,8 @@ public class HandlerInfo {
      */
     int totalConsumption = 0;
 
+    int nodeId;
+
     public List<TaskBean> getTaskList() {
         return taskList;
     }
@@ -33,5 +35,13 @@ public class HandlerInfo {
 
     public void setTotalConsumption(int totalConsumption) {
         this.totalConsumption = totalConsumption;
+    }
+
+    public int getNodeId() {
+        return nodeId;
+    }
+
+    public void setNodeId(int nodeId) {
+        this.nodeId = nodeId;
     }
 }

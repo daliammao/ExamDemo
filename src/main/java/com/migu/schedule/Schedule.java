@@ -6,9 +6,7 @@ import com.migu.schedule.info.HandlerInfo;
 import com.migu.schedule.info.TaskBean;
 import com.migu.schedule.info.TaskInfo;
 
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /*
  *类名和方法不能修改
@@ -17,9 +15,9 @@ public class Schedule {
     /**
      * 服务器调度map
      */
-    Map<Integer, HandlerInfo> serverMap = new TreeMap<>();
-    Map<Integer,TaskBean> hangTask = new TreeMap<>();
-    Map<Integer,TaskBean> doneTask = new TreeMap<>();
+    TreeMap<Integer, HandlerInfo> serverMap = new TreeMap<>();
+    Map<Integer, TaskBean> hangTask = new HashMap<>();
+    Map<Integer, TaskBean> doneTask = new HashMap<>();
 
 
     public int init() {
@@ -36,6 +34,7 @@ public class Schedule {
         }
 
         HandlerInfo info = new HandlerInfo();
+        info.setNodeId(nodeId);
         serverMap.put(nodeId, info);
         return ReturnCodeKeys.E003;
     }
@@ -48,9 +47,8 @@ public class Schedule {
         }
 
         HandlerInfo info = serverMap.remove(nodeId);
-        for(TaskBean task : info.getTaskList()){
-            hangTask.put(task.getTaskId(),task);
-
+        for (TaskBean task : info.getTaskList()) {
+            hangTask.put(task.getTaskId(), task);
         }
         return ReturnCodeKeys.E006;
     }
@@ -65,8 +63,8 @@ public class Schedule {
             return ReturnCodeKeys.E010;
         }
 
-        TaskBean task= new TaskBean(taskId,0,consumption);
-        hangTask.put(taskId,task);
+        TaskBean task = new TaskBean(taskId, 0, consumption);
+        hangTask.put(taskId, task);
         return ReturnCodeKeys.E008;
     }
 
@@ -77,15 +75,15 @@ public class Schedule {
         } else if (!hangTask.containsKey(taskId) && !doneTask.containsKey(taskId)) {
             return ReturnCodeKeys.E012;
         }
-        if(hangTask.containsKey(taskId)){
+        if (hangTask.containsKey(taskId)) {
             hangTask.remove(taskId);
-        }else if(doneTask.containsKey(taskId)){
+        } else if (doneTask.containsKey(taskId)) {
             TaskBean info = doneTask.remove(taskId);
 
             int nodeId = info.getNodeId();
-            HandlerInfo hanlder= serverMap.get(nodeId);
-            for(TaskBean task:hanlder.getTaskList()){
-                if(task.getTaskId()==taskId){
+            HandlerInfo hanlder = serverMap.get(nodeId);
+            for (TaskBean task : hanlder.getTaskList()) {
+                if (task.getTaskId() == taskId) {
                     hanlder.getTaskList().remove(task);
                     break;
                 }
@@ -96,14 +94,51 @@ public class Schedule {
 
 
     public int scheduleTask(int threshold) {
-        // TODO 方法未实现
-        return ReturnCodeKeys.E000;
+        if (threshold <= 0) {
+            return ReturnCodeKeys.E002;
+        }
+
+        if(serverMap.size()==0){
+            return ReturnCodeKeys.E014;
+        }
+
+        List<TaskBean> tasks = new ArrayList<>(hangTask.values());
+        tasks.sort((o1, o2) -> o2.getConsumption() - o1.getConsumption());
+
+        TreeMap<Integer, HandlerInfo> sortMap = new TreeMap<>();
+        for(HandlerInfo handler :serverMap.values()){
+            sortMap.put(handler.getTotalConsumption(),handler);
+        }
+
+        for (TaskBean task :tasks){
+            int minK = sortMap.firstKey();
+            HandlerInfo minV = sortMap.remove(minK);
+
+            task.setNodeId(minV.getNodeId());
+            minV.getTaskList().add(task);
+            minK = minV.getTotalConsumption() + task.getConsumption();
+            minV.setTotalConsumption(minK);
+
+            sortMap.put(minK,minV);
+            hangTask.remove(task.getTaskId());
+            doneTask.put(task.getTaskId(),task);
+        }
+
+        serverMap.clear();
+        for(HandlerInfo handler :sortMap.values()){
+            serverMap.put(handler.getNodeId(),handler);
+        }
+
+        return ReturnCodeKeys.E013;
     }
 
 
     public int queryTaskStatus(List<TaskInfo> tasks) {
-        // TODO 方法未实现
-        return ReturnCodeKeys.E000;
+        if(tasks == null){
+            return ReturnCodeKeys.E016;
+        }
+
+        return ReturnCodeKeys.E015;
     }
 
 }
