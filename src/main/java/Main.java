@@ -1,4 +1,6 @@
 import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class Main {
 
@@ -7,8 +9,12 @@ public class Main {
     }
 
     private void start() {
+        Map<Integer, String> map = new TreeMap<>();
+        map.put(5,"5");
+        map.put(2,"2");
+        map.put(10,"1");
 
-        System.out.println(lengthOfLongestSubstring("pwwkekab"));
+        System.out.println(map);
     }
 
     public int lengthOfLongestSubstring(String s) {
