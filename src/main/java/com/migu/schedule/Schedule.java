@@ -22,6 +22,8 @@ public class Schedule {
 
     public int init() {
         serverMap.clear();
+        hangTask.clear();
+        doneTask.clear();
         return ReturnCodeKeys.E001;
     }
 
@@ -105,27 +107,28 @@ public class Schedule {
         List<TaskBean> tasks = new ArrayList<>(hangTask.values());
         tasks.sort((o1, o2) -> o2.getConsumption() - o1.getConsumption());
 
-        TreeMap<Integer, HandlerInfo> sortMap = new TreeMap<>();
-        for(HandlerInfo handler :serverMap.values()){
-            sortMap.put(handler.getTotalConsumption(),handler);
-        }
+        List<HandlerInfo> handlerInfos = new ArrayList<>(serverMap.values());
 
         for (TaskBean task :tasks){
-            int minK = sortMap.firstKey();
-            HandlerInfo minV = sortMap.remove(minK);
+            handlerInfos.sort((o1,o2)->o1.getTotalConsumption()-o2.getTotalConsumption());
+
+            int minK;
+            HandlerInfo minV = handlerInfos.get(0);
+            handlerInfos.remove(0);
 
             task.setNodeId(minV.getNodeId());
             minV.getTaskList().add(task);
             minK = minV.getTotalConsumption() + task.getConsumption();
             minV.setTotalConsumption(minK);
 
-            sortMap.put(minK,minV);
             hangTask.remove(task.getTaskId());
             doneTask.put(task.getTaskId(),task);
+
+            handlerInfos.add(minV);
         }
 
         serverMap.clear();
-        for(HandlerInfo handler :sortMap.values()){
+        for(HandlerInfo handler :handlerInfos){
             serverMap.put(handler.getNodeId(),handler);
         }
 
@@ -137,7 +140,16 @@ public class Schedule {
         if(tasks == null){
             return ReturnCodeKeys.E016;
         }
+        for(TaskInfo info :tasks){
+            if(hangTask.containsKey(info.getTaskId())){
+                info.setNodeId(-1);
+            }else if(doneTask.containsKey(info.getTaskId())){
+                int nodeId = doneTask.get(info.getTaskId()).getNodeId();
+                info.setNodeId(nodeId);
+            }
+        }
 
+        tasks.sort(Comparator.comparingInt(TaskInfo::getTaskId));
         return ReturnCodeKeys.E015;
     }
 
